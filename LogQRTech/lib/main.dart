@@ -196,7 +196,7 @@ class _HomePageState extends State<HomePage> {
                       child: ElevatedButton(
                         onPressed: navigateToRegistration,
                         child: Text(
-                          "Register",
+                          "Registr",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
