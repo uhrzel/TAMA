@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:qr_id_system/screens/admin_screen/home.dart';
-import 'package:qr_id_system/screens/user_screen/home.dart';
 import 'package:qr_id_system/registration_screen.dart';
 import 'package:qr_id_system/screens/sql_helpers/DatabaseHelper.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: HomePage(),
+      home: const HomePage(),
       theme: ThemeData(
         primarySwatch: Colors.teal,
       ),
     ));
 
 class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -20,12 +21,14 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final bool _obscureText = true;
 
+  // ignore: non_constant_identifier_names
   var username_controller = TextEditingController();
+  // ignore: non_constant_identifier_names
   var password_controller = TextEditingController();
 
   void login(BuildContext context) async {
     if (username_controller.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text(
           'Username is empty!',
           style: TextStyle(fontSize: 18.0),
@@ -174,7 +177,7 @@ class _HomePageState extends State<HomePage> {
                       width: 250,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                      ),
+                      ),  
                       child: ElevatedButton(
                         onPressed: () => login(context),
                         child: Text(
@@ -196,7 +199,7 @@ class _HomePageState extends State<HomePage> {
                       child: ElevatedButton(
                         onPressed: navigateToRegistration,
                         child: Text(
-                          "Registr",
+                          "Register",
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

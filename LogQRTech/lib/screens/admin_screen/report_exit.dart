@@ -36,7 +36,7 @@ class _ExitLogsReportScreenState extends State<ExitLogsReportScreen> {
   }
 
   Future<void> fetchExitLogs() async {
-    List<Map<String, dynamic>> logs = await RegistrationSQLHelper.getExitLogs();
+    List<Map<String, dynamic>> logs = await RegistrationSQLHelper.getExLogs();
     setState(() {
       exitLogs = logs;
     });
@@ -62,7 +62,7 @@ class _ExitLogsReportScreenState extends State<ExitLogsReportScreen> {
               backgroundImage:
                   _bytesImage != null ? MemoryImage(_bytesImage) : null,
             ),
-            title: Text(log['fullname'] ?? 'Unknown'),
+            title: Text(log['fullName'] ?? 'Unknown'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

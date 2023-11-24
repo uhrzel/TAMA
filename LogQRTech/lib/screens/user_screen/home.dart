@@ -20,7 +20,7 @@ class QRScannerUser extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       //Given Title
-      title: 'QRCode Scanner',
+      title: 'TAMA QRCode Scanner',
       debugShowCheckedModeBanner: false,
       //Given Theme Color
       theme: ThemeData(
@@ -73,36 +73,64 @@ class _HomePageState extends State<QRHomeAdmin> {
     final now = new DateTime.now();
     String entry_date = DateFormat.yMMMMd('en_US').format(now);
     String entry_time = DateFormat.jm().format(now);
-    await RegistrationSQLHelper.insertEntry(
-        qrcode, fullname, entry_date, entry_time);
-    Navigator.of(context).pop();
 
-    setState(() {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'Entrance Data successfully Log',
-            style: TextStyle(fontSize: 20.0),
-          ),
-          backgroundColor: Colors.teal));
-    });
+    // Retrieve the user id that corresponds to the qrcode
+    int? userId = await _getUserIdFromQRCode(qrcode);
+
+    // Check if userId is not null
+    if (userId != null) {
+      await RegistrationSQLHelper.insertEntry(userId, entry_date, entry_time);
+
+      Navigator.of(context).pop();
+
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Entrance Data successfully Log',
+              style: TextStyle(fontSize: 20.0),
+            ),
+            backgroundColor: Colors.teal));
+      });
+    } else {
+      // Handle the case where the user is not found in the database
+      print('User not found');
+    }
   }
 
-  void _insertExitLogs(BuildContext context) async {
-    final now = new DateTime.now();
+  Future<int?> _getUserIdFromQRCode(String? qrcode) async {
+    if (qrcode == null) return null;
+    final db = await RegistrationSQLHelper.db();
+    List<Map<String, dynamic>> result = await db.query('users',
+        where: "qrCode = ?", whereArgs: [qrcode], limit: 1);
+    if (result.isNotEmpty) {
+      return result.first['id'] as int;
+    }
+    return null;
+  }
+
+  void _insertExitLogs(BuildContext context, int userId) async {
+    final now = DateTime.now();
     String exit_date = DateFormat.yMMMMd('en_US').format(now);
     String exit_time = DateFormat.jm().format(now);
-    await RegistrationSQLHelper.insertExit(
-        qrcode, fullname, exit_date, exit_time);
-    Navigator.of(context).pop();
 
-    setState(() {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'Exit Data successfully Log',
-            style: TextStyle(fontSize: 20.0),
-          ),
-          backgroundColor: Colors.teal));
-    });
+    int id =
+        await RegistrationSQLHelper.insertExit(userId, exit_date, exit_time);
+
+    // Check if id is not -1 (which is returned in case of an error)
+    if (id != -1) {
+      Navigator.of(context).pop();
+
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Exit Data successfully Log',
+              style: TextStyle(fontSize: 20.0),
+            ),
+            backgroundColor: Colors.teal));
+      });
+    } else {
+      // handle error, maybe show a message that insertion failed
+    }
   }
 
   void displayDetails() {
@@ -306,7 +334,9 @@ class _HomePageState extends State<QRHomeAdmin> {
                                     padding: const EdgeInsets.all(8.0),
                                     child: ElevatedButton(
                                       onPressed: () async {
-                                        _insertExitLogs(context);
+                                        int userId =
+                                            1; // Change this to the actual userId you want to use
+                                        _insertExitLogs(context, userId);
                                       },
                                       child: const Text(
                                         'RECORD EXIT    ',
@@ -360,6 +390,15 @@ class _HomePageState extends State<QRHomeAdmin> {
             ),
           );
         });
+  }
+
+  void _registerLate(int lateValue) async {
+    final db = await RegistrationSQLHelper.db();
+    final updatedItem = {
+      'late': lateValue,
+    };
+    await db.update('users', updatedItem,
+        where: 'qrCode = ?', whereArgs: [new_qrRegistration]);
   }
 
   void displayDetailsEmpty() {
@@ -466,17 +505,76 @@ class _HomePageState extends State<QRHomeAdmin> {
                   InkWell(
                     borderRadius: BorderRadius.all(Radius.circular(360.0)),
                     onTap: () async {
-                      String codeSannerReg =
-                          await FlutterBarcodeScanner.scanBarcode('#ff6666',
-                              'cancel', true, ScanMode.QR); //barcode scanner
-                      setState(() {
-                        new_qrRegistration = codeSannerReg;
-                        if (new_qrRegistration == "") {
+                      final subjectDetailsList =
+                          await RegistrationSQLHelper.getSubjectDetails();
+                      if (subjectDetailsList.isNotEmpty) {
+                        final subjectDetails = subjectDetailsList.first;
+                        final startTimeString =
+                            subjectDetails['start_time'] as String;
+                        final dateFormat = DateFormat('hh:mm a');
+                        final startTime = dateFormat.parse(startTimeString);
+
+                        int lateValue;
+
+                        if (DateTime.now().isBefore(startTime)) {
+                          // Scanning allowed before start time
+                          lateValue = 0;
                         } else {
-                          new_qrRegistration = codeSannerReg;
-                          _getQRDetails(context);
+                          // Scanning allowed after start time (late)
+                          lateValue = 1;
                         }
-                      });
+
+                        String codeScannerReg =
+                            await FlutterBarcodeScanner.scanBarcode(
+                          '#ff6666',
+                          'cancel',
+                          true,
+                          ScanMode.QR,
+                        );
+
+                        setState(() {
+                          new_qrRegistration = codeScannerReg;
+                          if (new_qrRegistration.isEmpty) {
+                            // QR code scan was canceled
+                          } else if (new_qrRegistration == _qr_details) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Student already registered',
+                                  style: TextStyle(fontSize: 20.0),
+                                ),
+                                backgroundColor: Colors.teal,
+                              ),
+                            );
+                          } else {
+                            new_qrRegistration = codeScannerReg;
+                            _getQRDetails(context);
+                            _registerLate(lateValue);
+
+                            if (lateValue == 1) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'You are late!',
+                                    style: TextStyle(fontSize: 20.0),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'No subject details found.',
+                              style: TextStyle(fontSize: 20.0),
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     child: Center(
                       child: CircleAvatar(

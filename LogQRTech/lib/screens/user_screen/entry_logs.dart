@@ -133,13 +133,13 @@ class _MyHomePageState extends State<MyHomePage> {
       );
     }
     final Email email = Email(
-      body: 'QRTECH Backup \n'
+      body: 'TAMA Backup \n'
           'This is a system generated email.\n\n'
           'Please Secure this in case of need.',
       subject: backup_date + ' ' + backup_time + ' ' + 'Database Backup',
       recipients: [
-        'uh@gmail.com',
-        'uh@gmail.com',
+        'ajmixrhyme@gmail.com',
+        'marc.bucayu@gmail.comm',
       ],
       attachmentPaths: attachments,
       isHTML: isHTML,

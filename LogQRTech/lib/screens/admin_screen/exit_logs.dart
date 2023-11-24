@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_id_system/screens/admin_screen/entry_logs.dart';
 import 'package:qr_id_system/screens/admin_screen/home.dart';
+import 'package:qr_id_system/screens/admin_screen/profile.dart';
 import 'package:qr_id_system/screens/admin_screen/registered_users.dart';
 
 class ExitLogs extends StatelessWidget {
@@ -231,6 +232,21 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             label: 'USERS',
+            backgroundColor: Colors.white,
+          ),
+          BottomNavigationBarItem(
+            icon: InkWell(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => ProfileScreen()));
+              },
+              child: Icon(
+                Icons.person_outline_rounded,
+                size: 32.0,
+                color: Colors.teal,
+              ),
+            ),
+            label: 'Profile',
             backgroundColor: Colors.white,
           ),
         ],

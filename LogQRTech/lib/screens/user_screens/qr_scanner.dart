@@ -10,7 +10,7 @@ class QRScanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       //Given Title
-      title: 'QRCode Scanner',
+      title: ' TAMA QRCode Scanner',
       debugShowCheckedModeBanner: false,
       //Given Theme Color
       theme: ThemeData(

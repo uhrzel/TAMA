@@ -19,8 +19,7 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Future<void> fetchEntryLogs() async {
-    List<Map<String, dynamic>> logs =
-        await RegistrationSQLHelper.getEntryLogs();
+    List<Map<String, dynamic>> logs = await RegistrationSQLHelper.getEnLogs();
     setState(() {
       entryLogs = logs;
     });
@@ -52,7 +51,7 @@ class _ReportScreenState extends State<ReportScreen> {
               backgroundImage:
                   _bytesImage != null ? MemoryImage(_bytesImage) : null,
             ),
-            title: Text(log['fullname'] ?? 'Unknown'),
+            title: Text(log['fullName'] ?? 'Unknown'),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

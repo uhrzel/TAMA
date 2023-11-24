@@ -7,6 +7,7 @@ import 'package:qr_id_system/screens/admin_screen/email_sender.dart';
 import 'package:qr_id_system/screens/admin_screen/entry_logs.dart';
 import 'package:qr_id_system/screens/admin_screen/export_excell.dart';
 import 'package:qr_id_system/screens/admin_screen/home.dart';
+import 'package:qr_id_system/screens/admin_screen/profile.dart';
 import 'package:qr_id_system/screens/admin_screen/registered_users.dart';
 import 'package:path/path.dart';
 import 'dart:io';
@@ -15,8 +16,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:qr_id_system/screens/admin_screen/timestamps.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:qr_id_system/screens/admin_screen/dashboard_report.dart';
-import 'package:qr_id_system/screens/admin_screen/create_sudent_list.dart';
-import 'package:qr_id_system/screens/admin_screen/export_excell.dart';
+import 'package:qr_id_system/screens/admin_screen/student_list.dart';
 
 class DatabaseScreen extends StatefulWidget {
   @override
@@ -71,7 +71,6 @@ class _DatabaseHomeState extends State<DatabaseHome> {
           'Please Secure this in case of need.',
       subject: backup_date + ' ' + backup_time + ' ' + 'Database Backup',
       recipients: [
-        'marc.bucayu@gmail.com',
         'ajmixrhyme@gmail.com',
       ],
       attachmentPaths: attachments,
@@ -759,6 +758,21 @@ class _DatabaseHomeState extends State<DatabaseHome> {
               ),
             ),
             label: 'SETTINGS',
+            backgroundColor: Colors.white,
+          ),
+          BottomNavigationBarItem(
+            icon: InkWell(
+              onTap: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    builder: (BuildContext context) => ProfileScreen()));
+              },
+              child: Icon(
+                Icons.person_outline_rounded,
+                size: 32.0,
+                color: Colors.teal,
+              ),
+            ),
+            label: 'Profile',
             backgroundColor: Colors.white,
           ),
         ],

@@ -14,6 +14,7 @@ import 'package:qr_id_system/screens/admin_screen/entry_logs.dart';
 import 'package:flutter_beep/flutter_beep.dart';
 import 'package:qr_id_system/screens/admin_screen/registered_users.dart';
 import 'package:qr_id_system/screens/sql_helpers/DatabaseHelper.dart';
+import 'package:qr_id_system/screens/admin_screen/profile.dart';
 
 class QRScannerAdmin extends StatelessWidget {
   // This widget is the root of your application.
@@ -21,7 +22,7 @@ class QRScannerAdmin extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       //Given Title
-      title: 'QRCode Scanner',
+      title: 'TAMA QRCode Scanner',
       debugShowCheckedModeBanner: false,
       //Given Theme Color
       theme: ThemeData(
@@ -70,36 +71,64 @@ class _HomePageState extends State<QRHomeAdmin> {
     final now = new DateTime.now();
     String entry_date = DateFormat.yMMMMd('en_US').format(now);
     String entry_time = DateFormat.jm().format(now);
-    await RegistrationSQLHelper.insertEntry(
-        qrcode, fullname, entry_date, entry_time);
-    Navigator.of(context).pop();
 
-    setState(() {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'Entrance Data successfully Log',
-            style: TextStyle(fontSize: 20.0),
-          ),
-          backgroundColor: Colors.teal));
-    });
+    // Retrieve the user id that corresponds to the qrcode
+    int? userId = await _getUserIdFromQRCode(qrcode);
+
+    // Check if userId is not null
+    if (userId != null) {
+      await RegistrationSQLHelper.insertEntry(userId, entry_date, entry_time);
+
+      Navigator.of(context).pop();
+
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Entrance Data successfully Log',
+              style: TextStyle(fontSize: 20.0),
+            ),
+            backgroundColor: Colors.teal));
+      });
+    } else {
+      // Handle the case where the user is not found in the database
+      print('User not found');
+    }
   }
 
-  void _insertExitLogs(BuildContext context) async {
-    final now = new DateTime.now();
+  Future<int?> _getUserIdFromQRCode(String? qrcode) async {
+    if (qrcode == null) return null;
+    final db = await RegistrationSQLHelper.db();
+    List<Map<String, dynamic>> result = await db.query('users',
+        where: "qrCode = ?", whereArgs: [qrcode], limit: 1);
+    if (result.isNotEmpty) {
+      return result.first['id'] as int;
+    }
+    return null;
+  }
+
+  void _insertExitLogs(BuildContext context, int userId) async {
+    final now = DateTime.now();
     String exit_date = DateFormat.yMMMMd('en_US').format(now);
     String exit_time = DateFormat.jm().format(now);
-    await RegistrationSQLHelper.insertExit(
-        qrcode, fullname, exit_date, exit_time);
-    Navigator.of(context).pop();
 
-    setState(() {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-            'Exit Data successfully Log',
-            style: TextStyle(fontSize: 20.0),
-          ),
-          backgroundColor: Colors.teal));
-    });
+    int id =
+        await RegistrationSQLHelper.insertExit(userId, exit_date, exit_time);
+
+    // Check if id is not -1 (which is returned in case of an error)
+    if (id != -1) {
+      Navigator.of(context).pop();
+
+      setState(() {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Exit Data successfully Log',
+              style: TextStyle(fontSize: 20.0),
+            ),
+            backgroundColor: Colors.teal));
+      });
+    } else {
+      // handle error, maybe show a message that insertion failed
+    }
   }
 
   void displayDetails() {
@@ -303,7 +332,9 @@ class _HomePageState extends State<QRHomeAdmin> {
                                     padding: const EdgeInsets.all(8.0),
                                     child: ElevatedButton(
                                       onPressed: () async {
-                                        _insertExitLogs(context);
+                                        int userId = _qr_details[0][
+                                            'id']; // Replace 'id' with the correct key for the user ID
+                                        _insertExitLogs(context, userId);
                                       },
                                       child: const Text(
                                         'RECORD EXIT    ',
@@ -361,57 +392,68 @@ class _HomePageState extends State<QRHomeAdmin> {
 
   void displayDetailsEmpty() {
     showModalBottomSheet(
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25.0))),
-        context: context,
-        isScrollControlled: true,
-        builder: (context) {
-          return Container(
-            color: Colors.white,
-            height: MediaQuery.of(context).size.height / 2,
-            child: SafeArea(
-              child: Padding(
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(25.0))),
+      context: context,
+      builder: (context) {
+        return Container(
+          color: Colors.white,
+          child: ListView.builder(
+            itemCount: 1,
+            itemBuilder: (BuildContext context, int index) {
+              return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    SizedBox(
-                      height: 16.0,
-                    ),
+                    SizedBox(height: 16.0),
                     Center(
-                        child: Image.asset(
-                      'images/warning.gif',
-                      fit: BoxFit.cover,
-                    )),
-                    SizedBox(
-                      height: 16.0,
+                      child: Image.asset(
+                        'images/warn.gif',
+                        fit: BoxFit.cover,
+                      ),
                     ),
+                    SizedBox(height: 16.0),
                     Center(
                       child: Text(
                         'Unregistered QR Code',
                         style: TextStyle(
-                            fontSize: 32.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.red),
+                          fontSize: 32.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ),
                     Center(
                       child: Text(
-                        'This entry will be log, If unauthorized, do not let this vehicle enter the campus.',
+                        'This entry will be logged. Please register the student using the registration.',
                         style: TextStyle(
-                            fontSize: 24.0,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black),
+                          fontSize: 24.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                    )
+                    ),
+                    SizedBox(height: 16.0),
                   ],
                 ),
-              ),
-            ),
-          );
-        });
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  void _registerLate(int late) async {
+    final db = await RegistrationSQLHelper.db();
+    final updatedItem = {
+      'late': late,
+    };
+    await db.update('users', updatedItem,
+        where: 'qrCode = ?', whereArgs: [new_qrRegistration]);
   }
 
   @override
@@ -427,7 +469,7 @@ class _HomePageState extends State<QRHomeAdmin> {
               ),
             ),
             title: Text(
-              'QRTech Scanner',
+              'TAMA QR CODE SCANNER',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -458,24 +500,76 @@ class _HomePageState extends State<QRHomeAdmin> {
                   InkWell(
                     borderRadius: BorderRadius.all(Radius.circular(360.0)),
                     onTap: () async {
-                      String codeSannerReg =
-                          await FlutterBarcodeScanner.scanBarcode(
-                              '#ff6666', 'cancel', true, ScanMode.QR);
-                      setState(() {
-                        new_qrRegistration = codeSannerReg;
-                        if (new_qrRegistration == "") {
-                        } else if (new_qrRegistration == _qr_details) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                              content: Text(
-                                'Student already Registered',
-                                style: TextStyle(fontSize: 20.0),
-                              ),
-                              backgroundColor: Colors.teal));
+                      final subjectDetailsList =
+                          await RegistrationSQLHelper.getSubjectDetails();
+                      if (subjectDetailsList.isNotEmpty) {
+                        final subjectDetails = subjectDetailsList.first;
+                        final startTimeString =
+                            subjectDetails['start_time'] as String;
+                        final dateFormat = DateFormat('hh:mm a');
+                        final startTime = dateFormat.parse(startTimeString);
+
+                        int lateValue;
+
+                        if (DateTime.now().isBefore(startTime)) {
+                          // Scanning allowed before start time
+                          lateValue = 0;
                         } else {
-                          new_qrRegistration = codeSannerReg;
-                          _getQRDetails(context);
+                          // Scanning allowed after start time (late)
+                          lateValue = 1;
                         }
-                      });
+
+                        String codeScannerReg =
+                            await FlutterBarcodeScanner.scanBarcode(
+                          '#ff6666',
+                          'cancel',
+                          true,
+                          ScanMode.QR,
+                        );
+
+                        setState(() {
+                          new_qrRegistration = codeScannerReg;
+                          if (new_qrRegistration.isEmpty) {
+                            // QR code scan was canceled
+                          } else if (new_qrRegistration == _qr_details) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Student already registered',
+                                  style: TextStyle(fontSize: 20.0),
+                                ),
+                                backgroundColor: Colors.teal,
+                              ),
+                            );
+                          } else {
+                            new_qrRegistration = codeScannerReg;
+                            _getQRDetails(context);
+                            _registerLate(lateValue);
+
+                            if (lateValue == 1) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'You are late!',
+                                    style: TextStyle(fontSize: 20.0),
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        });
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'No subject details found.',
+                              style: TextStyle(fontSize: 20.0),
+                            ),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
                     },
                     child: Center(
                       child: CircleAvatar(
@@ -552,6 +646,21 @@ class _HomePageState extends State<QRHomeAdmin> {
                   ),
                 ),
                 label: 'SETTINGS',
+                backgroundColor: Colors.white,
+              ),
+              BottomNavigationBarItem(
+                icon: InkWell(
+                  onTap: () {
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (BuildContext context) => ProfileScreen()));
+                  },
+                  child: Icon(
+                    Icons.person_outline_rounded,
+                    size: 32.0,
+                    color: Colors.teal,
+                  ),
+                ),
+                label: 'Profile',
                 backgroundColor: Colors.white,
               ),
             ],
