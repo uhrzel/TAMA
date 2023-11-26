@@ -14,7 +14,7 @@ class RegistrationSQLHelper {
         address TEXT,
         subject TEXT,
         password TEXT,
- 
+        status TEXT DEFAULT 'not verified',
         createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
       """);
@@ -287,6 +287,17 @@ class RegistrationSQLHelper {
     return db.query('users', where: "qrCode = ?", whereArgs: [qr], limit: 1);
   }
 
+  static Future<int> updateRegistrationStatus(
+      int registrationId, String status) async {
+    final db = await RegistrationSQLHelper.db();
+    final updatedItem = {
+      'regid': registrationId,
+      'status': status,
+    };
+    return await db.update('registration', updatedItem,
+        where: 'regid = ?', whereArgs: [registrationId]);
+  }
+
   static Future<int> insertRegistration(
     String? email,
     String? firstName,
@@ -305,6 +316,7 @@ class RegistrationSQLHelper {
       'address': address,
       'subject': subject,
       'password': password,
+      'status': 'not verified', // Add the status here
     };
     final id = await db.insert('registration', data,
         conflictAlgorithm: sql.ConflictAlgorithm.replace);

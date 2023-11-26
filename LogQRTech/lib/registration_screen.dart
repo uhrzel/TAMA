@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_id_system/screens/sql_helpers/DatabaseHelper.dart';
 import 'package:http/http.dart' as http;
+import 'package:qr_id_system/main.dart';
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -16,6 +17,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+
+  late int _registrationId; // Declare _registrationId at the class level
 
   void _registerUser() async {
     String firstName = _firstNameController.text;
@@ -59,7 +63,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       return;
     }
 
-    int registrationId = await RegistrationSQLHelper.insertRegistration(
+    // Assign the registrationId value
+    _registrationId = await RegistrationSQLHelper.insertRegistration(
       email,
       firstName,
       lastName,
@@ -69,10 +74,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       password,
     );
 
-    if (registrationId != null) {
+    if (_registrationId != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Registration successful')),
       );
+
+      // Set the status to 'not verified' after successful registration
+      await RegistrationSQLHelper.updateRegistrationStatus(
+          _registrationId, 'not verified');
 
       // Clear the text fields after successful registration
       _emailController.clear();
@@ -92,10 +101,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     // Make a request to the PHP script to get OTP
     final response = await http.post(
-      Uri.parse('http://192.168.43.102:8080/SMTP-cas/SENDER.php'),
+      Uri.parse('http://192.168.254.159:8080/SMTP-cas/SENDER.php'),
       body: {'email': email},
     );
 
+    print('Response Body: ${response.body}');
+    print('Response Status: ${response.statusCode}');
     if (response.statusCode == 200) {
       // Parse the JSON response
       Map<String, dynamic> data = json.decode(response.body);
@@ -125,16 +136,28 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         return AlertDialog(
           title: Text('Verify OTP'),
           content: TextField(
-            controller: TextEditingController(),
+            controller: _otpController,
             decoration: InputDecoration(labelText: 'Enter OTP'),
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                String enteredOtp = TextEditingController().text;
+              onPressed: () async {
+                String enteredOtp = _otpController.text;
                 if (enteredOtp == otp.toString()) {
-                  Navigator.of(context).pop();
-                  // Add your navigation logic here
+                  await RegistrationSQLHelper.updateRegistrationStatus(
+                      _registrationId, 'verified');
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('OTP Verified. Please Log in')),
+                  );
+
+                  // Navigate to the HomePage after a delay (for visibility of the Snackbar)
+                  Future.delayed(Duration(seconds: 2), () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HomePage()),
+                    );
+                  });
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Invalid OTP')),

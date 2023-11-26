@@ -60,14 +60,24 @@ class _HomePageState extends State<HomePage> {
     );
 
     if (matchingRegistration.isNotEmpty) {
-      if (matchingRegistration['password'] == password) {
-        Navigator.of(context).push(MaterialPageRoute(
-          builder: (BuildContext context) => QRScannerAdmin(),
-        ));
+      if (matchingRegistration['status'] == 'verified') {
+        if (matchingRegistration['password'] == password) {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (BuildContext context) => QRScannerAdmin(),
+          ));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+              'Invalid password!',
+              style: TextStyle(fontSize: 18.0),
+            ),
+            backgroundColor: Colors.red,
+          ));
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(
-            'Invalid password!',
+            'Account not verified! Please verify your account with OTP.',
             style: TextStyle(fontSize: 18.0),
           ),
           backgroundColor: Colors.red,
@@ -177,7 +187,7 @@ class _HomePageState extends State<HomePage> {
                       width: 250,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                      ),  
+                      ),
                       child: ElevatedButton(
                         onPressed: () => login(context),
                         child: Text(
