@@ -1,7 +1,11 @@
 //ignore: file_names
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 class RegistrationSQLHelper {
   static Future<void> createTables(sql.Database database) async {
@@ -308,6 +312,8 @@ class RegistrationSQLHelper {
     String? password,
   ) async {
     final db = await RegistrationSQLHelper.db();
+    final passwordHash = md5.convert(utf8.encode(password ?? '')).toString();
+
     final data = {
       'email': email,
       'firstname': firstName,
@@ -315,7 +321,7 @@ class RegistrationSQLHelper {
       'username': username,
       'address': address,
       'subject': subject,
-      'password': password,
+      'password': passwordHash,
       'status': 'not verified', // Add the status here
     };
     final id = await db.insert('registration', data,

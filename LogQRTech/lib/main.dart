@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_id_system/screens/admin_screen/home.dart';
 import 'package:qr_id_system/registration_screen.dart';
 import 'package:qr_id_system/screens/sql_helpers/DatabaseHelper.dart';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -61,7 +63,10 @@ class _HomePageState extends State<HomePage> {
 
     if (matchingRegistration.isNotEmpty) {
       if (matchingRegistration['status'] == 'verified') {
-        if (matchingRegistration['password'] == password) {
+        final enteredPasswordHash =
+            md5.convert(utf8.encode(password)).toString();
+
+        if (matchingRegistration['password'] == enteredPasswordHash) {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (BuildContext context) => QRScannerAdmin(),
           ));
